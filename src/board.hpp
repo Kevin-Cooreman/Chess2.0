@@ -14,7 +14,7 @@ const string startingPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
 
 // 8x8 array for a board
 // 0,0 = a8
-int board[8][8];
+extern int board[8][8];
 
 // empty square = 0
 const uint8_t EMPTY = 0b0000;
@@ -36,7 +36,7 @@ const uint8_t BLACK_KING = 0b1110; //14
 
 //functions
 void initBoard(); //initialise empty board
-void printboard(); //prints board
+void printBoard(); //prints board
 void setupStartPos(); //setup starting position
 void charToPiece(); //converts a charachter to a piece type
 void pieceToChar();
