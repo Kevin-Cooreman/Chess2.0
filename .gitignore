@@ -1,0 +1,37 @@
+# Compiled source files
+*.o
+*.obj
+*.exe
+*.out
+*.a
+*.so
+*.dll
+
+# Build directories
+/build/
+CMakeFiles/
+CMakeCache.txt
+cmake-build-*/
+
+# CMake generated files
+CMakeLists.txt.user
+Makefile
+install_manifest.txt
+
+# VS Code settings
+.vscode/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# User-specific files
+*.swp
+*~
+
+# Other
+*.tmp
+*.bak
