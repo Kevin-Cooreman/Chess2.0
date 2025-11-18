@@ -14,7 +14,7 @@ const string startingPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
 
 // 8x8 array for a board
 // 0,0 = a8
-extern int board[8][8];
+extern int board[64];
 
 // empty square = 0
 const uint8_t EMPTY = 0b0000;

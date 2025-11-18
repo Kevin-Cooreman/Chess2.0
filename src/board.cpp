@@ -1,13 +1,11 @@
 #include "board.hpp"
 
-int board[8][8];
+int board[64];
 
 // initialise empty board
 void initBoard(){
-    for(int i = 0; i < 8; i++) {
-        for(int j = 0; j < 8; j++) {
-            board[i][j] = EMPTY;
-        }
+    for(int i = 0; i < 64; i++) {
+        board[i] = EMPTY;    
     }
 }
 
@@ -63,7 +61,7 @@ void printBoard(){
         cout << (8 - row) << " ";
         
         for(int col = 0; col < 8; col++) {
-            cout << "| " << pieceToChar(board[row][col]) << " ";
+            cout << "| " << pieceToChar(board[row*8+col]) << " ";
         }
         cout << "|\n";
         cout << "  +---+---+---+---+---+---+---+---+\n";
@@ -88,7 +86,7 @@ void setupStartPos(){
             col += (c - '0');  // Skip empty squares (number tells us how many)
         }
         else {
-            board[row][col] = charToPiece(c);  // Place the piece
+            board[row*8+col] = charToPiece(c);  // Place the piece
             col++;
         }
     }
