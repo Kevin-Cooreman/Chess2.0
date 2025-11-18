@@ -1,5 +1,4 @@
 #include "board.hpp"
-#include <iostream>
 
 int board[8][8];
 
