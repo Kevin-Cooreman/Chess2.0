@@ -1,11 +1,15 @@
+
 cmake_minimum_required(VERSION 3.10)
 project(Chess2.0 VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Add all .cpp files in src/ as sources
-file(GLOB SOURCES src/*.cpp)
-add_executable(Chess2.0 ${SOURCES})
+# Explicitly list all source files to ensure all are included
+add_executable(Chess2.0
+	src/main.cpp
+	src/board.cpp
+	src/moveGeneration.cpp
+)
 
 # Print build info
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
