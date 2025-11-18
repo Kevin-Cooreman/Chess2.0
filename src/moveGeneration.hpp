@@ -53,8 +53,7 @@ extern bool blackKingsideRookMoved;
 extern bool blackQueensideRookMoved;
 
 // En passant target square (-1 means no en passant available)
-extern int enPassantTargetRow;
-extern int enPassantTargetCol;
+extern int enPassantTargetSquare;
 
 // move types
 enum MoveType {
@@ -66,18 +65,13 @@ enum MoveType {
 };
 
 //move struct
-struct Move{
-    int startRow;
-    int startColumn;
-    int targetRow;
-    int targetColumn;
+struct Move {
+    int startSquare;   // 0-63
+    int targetSquare;  // 0-63
     MoveType moveType;
-    int promotionPiece; // For pawn promotion (QUEEN, ROOK, BISHOP, KNIGHT)
-    
-    // Constructor for normal moves
-    Move(int sR, int sC, int tR, int tC, MoveType type = NORMAL, int promo = 0) 
-        : startRow(sR), startColumn(sC), targetRow(tR), targetColumn(tC), 
-          moveType(type), promotionPiece(promo) {}
+    int promotionPiece;
+    Move(int s, int t, MoveType type = NORMAL, int promo = 0)
+        : startSquare(s), targetSquare(t), moveType(type), promotionPiece(promo) {}
 };
 
 //functions

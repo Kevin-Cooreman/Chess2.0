@@ -2,6 +2,7 @@
 
 //precomputed tables for all psuedo-legal moves 
 //sliding pieces
+//To do: fill in precomputed tables
 const uint64_t RookMoves[64] = {
     0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL,
     0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL,
