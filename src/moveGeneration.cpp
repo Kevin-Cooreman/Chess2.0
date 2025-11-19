@@ -265,7 +265,7 @@ bool squareAttacked(int square, Color byColor) {
     return false;
 }
 
-bool inCheck(int color) {
+bool inCheck(Color color) {
     int kingSquare = -1;
     // Find the king's square
     for (int sq = 0; sq < 64; ++sq) {
