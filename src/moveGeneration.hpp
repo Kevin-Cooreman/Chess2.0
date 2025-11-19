@@ -11,6 +11,7 @@
 #include <iostream>
 #include <vector>
 #include <array>
+#include <algorithm>
 
 using namespace std;
 
@@ -96,6 +97,15 @@ struct MoveList {
     }
 };
 
+// Pin and check info for fast legal move generation
+struct PinCheckInfo {
+    bool inCheck = false;
+    std::vector<int> pinnedSquares; // indices of pinned pieces
+    std::vector<int> checkRays;     // squares delivering check (could be improved to bitboards)
+};
+
+PinCheckInfo detectPinsAndChecks(Color color);
+
 //functions
 bool inCheck(Color color);
 bool squareAttacked(int square, Color byColor);
@@ -113,5 +123,6 @@ inline bool isOpponentPiece(int piece, Color color) {
 
 MoveList generateLegalmoves(); //return all legalmoves
 
+void updateGameState(const Move& move);
 void makeMove(const Move& move);
 void undoMove();
