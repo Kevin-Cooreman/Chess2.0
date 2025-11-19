@@ -1,4 +1,5 @@
 #include "board.hpp"
+#include "moveGeneration.hpp"
 
 int board[64];
 
@@ -14,16 +15,16 @@ char pieceToChar(int piece){
     switch(piece){
         //WHITE
         case 0b0001: return 'P';
-        case 0b0010: return 'R';
-        case 0b0011: return 'N';
-        case 0b0100: return 'B';
+        case 0b0010: return 'N';
+        case 0b0011: return 'B';
+        case 0b0100: return 'R';
         case 0b0101: return 'Q';
         case 0b0110: return 'K';
         //BLACK
         case 0b1001: return 'p';
-        case 0b1010: return 'r';
-        case 0b1011: return 'n';
-        case 0b1100: return 'b';
+        case 0b1010: return 'n';
+        case 0b1011: return 'b';
+        case 0b1100: return 'r';
         case 0b1101: return 'q';
         case 0b1110: return 'k';
         //DEFAULT
@@ -56,10 +57,9 @@ int charToPiece(char piece){
 void printBoard(){
     cout << "\n  +---+---+---+---+---+---+---+---+\n";
     
-    for(int row = 0; row < 8; row++) {
+    for(int row = 7; row >= 0; row--) {
         // Print rank number (8, 7, 6, ..., 1)
-        cout << (8 - row) << " ";
-        
+        cout << (row + 1) << " ";
         for(int col = 0; col < 8; col++) {
             cout << "| " << pieceToChar(board[row*8+col]) << " ";
         }
@@ -74,12 +74,13 @@ void printBoard(){
 //sets up starting position
 void setupStartPos(){
     initBoard(); // Clear the board first
-    
-    int row = 0, col = 0;
-    
+    isWhiteTurn = true; // White to move at start
+
+    int row = 7, col = 0;
+
     for(char c : startingPosition) {
         if(c == '/') {
-            row++;      // Move to next rank
+            row--;      // Move to next rank (downwards)
             col = 0;    // Reset to file 'a'
         }
         else if(isdigit(c)) {

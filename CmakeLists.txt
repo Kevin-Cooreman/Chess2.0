@@ -5,8 +5,17 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Explicitly list all source files to ensure all are included
+
+# Main chess engine executable
 add_executable(Chess2.0
 	src/main.cpp
+	src/board.cpp
+	src/moveGeneration.cpp
+)
+
+# Move generation test executable
+add_executable(test_move_generation
+	tests/test_move_generation.cpp
 	src/board.cpp
 	src/moveGeneration.cpp
 )

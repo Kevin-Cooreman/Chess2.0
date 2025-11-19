@@ -12,6 +12,7 @@
 #include <vector>
 #include <array>
 #include <algorithm>
+#include <stack>
 
 using namespace std;
 
@@ -106,6 +107,21 @@ struct PinCheckInfo {
 
 PinCheckInfo detectPinsAndChecks(Color color);
 
+// Structure to store all necessary game state for undo
+struct GameState {
+    int board[64];
+    bool whiteKingMoved;
+    bool blackKingMoved;
+    bool whiteKingsideRookMoved;
+    bool whiteQueensideRookMoved;
+    bool blackKingsideRookMoved;
+    bool blackQueensideRookMoved;
+    bool isWhiteTurn;
+    int enPassantTargetSquare;
+};
+
+static std::stack<GameState> undoStack;
+
 //functions
 bool inCheck(Color color);
 bool squareAttacked(int square, Color byColor);
@@ -125,4 +141,5 @@ MoveList generateLegalmoves(); //return all legalmoves
 
 void updateGameState(const Move& move);
 void makeMove(const Move& move);
+void saveGameState();
 void undoMove();
