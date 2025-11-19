@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <cctype>
+#include <sstream>
 using namespace std;
 
 // Helper: convert algebraic (e2) to 0-63 square
@@ -24,69 +25,87 @@ string squareToAlgebraic(int sq) {
 }
 
 int main() {
-    setupStartPos();
-    printBoard();
-    while (true) {
-        Color color = isWhiteTurn ? WHITE : BLACK;
-        cout << (isWhiteTurn ? "White" : "Black") << " to move. Enter your move (e.g., e2e4): ";
-        string moveInput;
-        cin >> moveInput;
-        if (moveInput == "exit" || moveInput == "quit") break;
-        if (moveInput.length() < 4 || moveInput.length() > 5) {
-            cout << "Invalid input format. Use e2e4 or e7e8q for promotion.\n";
-            continue;
-        }
-        int from = algebraicToSquare(moveInput.substr(0,2));
-        int to = algebraicToSquare(moveInput.substr(2,2));
-        int promo = 0;
-        if (moveInput.length() == 5) {
-            char p = tolower(moveInput[4]);
-            if (isWhiteTurn) {
-                if (p == 'q') promo = WHITE_QUEEN;
-                else if (p == 'r') promo = WHITE_ROOK;
-                else if (p == 'b') promo = WHITE_BISHOP;
-                else if (p == 'n') promo = WHITE_KNIGHT;
-            } else {
-                if (p == 'q') promo = BLACK_QUEEN;
-                else if (p == 'r') promo = BLACK_ROOK;
-                else if (p == 'b') promo = BLACK_BISHOP;
-                else if (p == 'n') promo = BLACK_KNIGHT;
-            }
-        }
-        if (from < 0 || to < 0) {
-            cout << "Invalid square.\n";
-            continue;
-        }
-        MoveList legalMoves = generateLegalmoves();
-        bool found = false;
-        Move chosen;
-        for (int i = 0; i < legalMoves.count; ++i) {
-            const Move& m = legalMoves.moves[i];
-            if (m.startSquare == from && m.targetSquare == to) {
-                if (m.moveType == PAWN_PROMOTION && promo != 0 && m.promotionPiece == promo) {
-                    chosen = m; found = true; break;
-                } else if (m.moveType != PAWN_PROMOTION) {
-                    chosen = m; found = true; break;
+    // Minimal UCI protocol loop
+    string line;
+    while (getline(cin, line)) {
+        if (line == "uci") {
+            cout << "id name Chess2.0" << endl;
+            cout << "id author Kevin-Cooreman" << endl;
+            cout << "uciok" << endl;
+        } else if (line == "isready") {
+            cout << "readyok" << endl;
+        } else if (line == "ucinewgame") {
+            setupStartPos();
+        } else if (line.rfind("position", 0) == 0) {
+            // Support 'position startpos moves ...'
+            if (line.find("startpos") != string::npos) {
+                setupStartPos();
+                size_t movesIdx = line.find("moves");
+                if (movesIdx != string::npos) {
+                    // Parse and play each move in order
+                    isWhiteTurn = true; // ensure correct turn
+                    string movesStr = line.substr(movesIdx + 5); // after 'moves'
+                    istringstream ms(movesStr);
+                    string move;
+                    while (ms >> move) {
+                        int from = algebraicToSquare(move.substr(0,2));
+                        int to = algebraicToSquare(move.substr(2,2));
+                        int promo = 0;
+                        if (move.length() == 5) {
+                            char p = tolower(move[4]);
+                            if (isWhiteTurn) {
+                                if (p == 'q') promo = WHITE_QUEEN;
+                                else if (p == 'r') promo = WHITE_ROOK;
+                                else if (p == 'b') promo = WHITE_BISHOP;
+                                else if (p == 'n') promo = WHITE_KNIGHT;
+                            } else {
+                                if (p == 'q') promo = BLACK_QUEEN;
+                                else if (p == 'r') promo = BLACK_ROOK;
+                                else if (p == 'b') promo = BLACK_BISHOP;
+                                else if (p == 'n') promo = BLACK_KNIGHT;
+                            }
+                        }
+                        MoveList legalMoves = generateLegalmoves();
+                        bool found = false;
+                        Move chosen;
+                        for (int i = 0; i < legalMoves.count; ++i) {
+                            const Move& m = legalMoves.moves[i];
+                            if (m.startSquare == from && m.targetSquare == to) {
+                                if (m.moveType == PAWN_PROMOTION && promo != 0 && m.promotionPiece == promo) {
+                                    chosen = m; found = true; break;
+                                } else if (m.moveType != PAWN_PROMOTION) {
+                                    chosen = m; found = true; break;
+                                }
+                            }
+                        }
+                        if (found) {
+                            cout << "info string UCI replay: applying move " << move << endl;
+                            makeMove(chosen);
+                        } else {
+                            cout << "info string UCI replay: WARNING - move not found in legal move list: " << move << endl;
+                        }
+                    }
                 }
             }
-        }
-        if (!found) {
-            cout << "Illegal move. Try again.\n";
-            continue;
-        }
-        makeMove(chosen);
-        printBoard();
-        // Check for game end
-        MoveList nextMoves = generateLegalmoves();
-        if (nextMoves.count == 0) {
-            if (inCheck(isWhiteTurn ? (isWhiteTurn ? WHITE : BLACK) : (isWhiteTurn ? BLACK : WHITE))) {
-                cout << (isWhiteTurn ? "Black" : "White") << " is checkmated!\n";
+        } else if (line.rfind("go", 0) == 0) {
+            // Generate and play a random legal move
+            MoveList legalMoves = generateLegalmoves();
+            if (legalMoves.count > 0) {
+                // Pick the first move (for now, not random)
+                const Move& m = legalMoves.moves[0];
+                string moveStr = squareToAlgebraic(m.startSquare) + squareToAlgebraic(m.targetSquare);
+                if (m.moveType == PAWN_PROMOTION) {
+                    // Always promote to queen for now
+                    moveStr += 'q';
+                }
+                cout << "bestmove " << moveStr << endl;
+                makeMove(m);
             } else {
-                cout << "Stalemate!\n";
+                cout << "bestmove 0000" << endl;
             }
+        } else if (line == "quit") {
             break;
         }
     }
-    cout << "Game over.\n";
     return 0;
 }
