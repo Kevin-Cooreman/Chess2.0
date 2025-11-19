@@ -299,64 +299,67 @@ void generatePseudoLegalMoves(MoveList& moves, Color color) {
         }
         // Bishops
         else if (piece == WHITE_BISHOP || piece == BLACK_BISHOP) {
-            uint64_t targets = BishopMoves[sq];
-            for (int t = 0; t < 64; ++t) {
-                if (targets & (1ULL << t)) {
-                    // Path blocking check (fix: use || not &&)
-                    int fromRow = sq / 8, fromCol = sq % 8;
-                    int toRow = t / 8, toCol = t % 8;
-                    int dRow = (toRow > fromRow) ? 1 : -1;
-                    int dCol = (toCol > fromCol) ? 1 : -1;
-                    int row = fromRow + dRow, col = fromCol + dCol;
-                    bool blocked = false;
-                    while (row != toRow || col != toCol) {
-                        if (board[row * 8 + col] != EMPTY) { blocked = true; break; }
-                        row += dRow; col += dCol;
-                    }
-                    if (!blocked && (board[t] == EMPTY || isOpponentPiece(board[t], color)))
+            // 4 diagonal directions: NE, NW, SE, SW
+            const int directions[4][2] = { {1,1}, {1,-1}, {-1,1}, {-1,-1} };
+            int fromRow = sq / 8, fromCol = sq % 8;
+            for (int d = 0; d < 4; ++d) {
+                int dRow = directions[d][0], dCol = directions[d][1];
+                int row = fromRow + dRow, col = fromCol + dCol;
+                while (row >= 0 && row < 8 && col >= 0 && col < 8) {
+                    int t = row * 8 + col;
+                    if (board[t] == EMPTY) {
                         moves.add(Move(sq, t));
+                    } else {
+                        if (isOpponentPiece(board[t], color))
+                            moves.add(Move(sq, t));
+                        break;
+                    }
+                    row += dRow;
+                    col += dCol;
                 }
             }
         }
         // Rooks
         else if (piece == WHITE_ROOK || piece == BLACK_ROOK) {
-            uint64_t targets = RookMoves[sq];
-            for (int t = 0; t < 64; ++t) {
-                if (targets & (1ULL << t)) {
-                    int fromRow = sq / 8, fromCol = sq % 8;
-                    int toRow = t / 8, toCol = t % 8;
-                    int dRow = (toRow > fromRow) ? 1 : (toRow < fromRow) ? -1 : 0;
-                    int dCol = (toCol > fromCol) ? 1 : (toCol < fromCol) ? -1 : 0;
-                    int row = fromRow + dRow, col = fromCol + dCol;
-                    bool blocked = false;
-                    while (row != toRow || col != toCol) {
-                        if (board[row * 8 + col] != EMPTY) { blocked = true; break; }
-                        row += dRow; col += dCol;
-                    }
-                    if (!blocked && (board[t] == EMPTY || isOpponentPiece(board[t], color)))
+            // 4 axis directions: up, down, right, left
+            const int directions[4][2] = { {1,0}, {-1,0}, {0,1}, {0,-1} };
+            int fromRow = sq / 8, fromCol = sq % 8;
+            for (int d = 0; d < 4; ++d) {
+                int dRow = directions[d][0], dCol = directions[d][1];
+                int row = fromRow + dRow, col = fromCol + dCol;
+                while (row >= 0 && row < 8 && col >= 0 && col < 8) {
+                    int t = row * 8 + col;
+                    if (board[t] == EMPTY) {
                         moves.add(Move(sq, t));
+                    } else {
+                        if (isOpponentPiece(board[t], color))
+                            moves.add(Move(sq, t));
+                        break;
+                    }
+                    row += dRow;
+                    col += dCol;
                 }
             }
         }
         // Queens
         else if (piece == WHITE_QUEEN || piece == BLACK_QUEEN) {
-            uint64_t targets = QueenMoves[sq];
-            for (int t = 0; t < 64; ++t) {
-                if (targets & (1ULL << t)) {
-                    // Queen can move like both rook and bishop, so check both blockings
-                    int fromRow = sq / 8, fromCol = sq % 8;
-                    int toRow = t / 8, toCol = t % 8;
-                    int dRow = (toRow > fromRow) ? 1 : (toRow < fromRow) ? -1 : 0;
-                    int dCol = (toCol > fromCol) ? 1 : (toCol < fromCol) ? -1 : 0;
-                    if (dRow == 0 && dCol == 0) continue;
-                    int row = fromRow + dRow, col = fromCol + dCol;
-                    bool blocked = false;
-                    while (row != toRow || col != toCol) {
-                        if (board[row * 8 + col] != EMPTY) { blocked = true; break; }
-                        row += dRow; col += dCol;
-                    }
-                    if (!blocked && (board[t] == EMPTY || isOpponentPiece(board[t], color)))
+            // 8 directions: up, down, right, left, and 4 diagonals
+            const int directions[8][2] = { {1,0}, {-1,0}, {0,1}, {0,-1}, {1,1}, {1,-1}, {-1,1}, {-1,-1} };
+            int fromRow = sq / 8, fromCol = sq % 8;
+            for (int d = 0; d < 8; ++d) {
+                int dRow = directions[d][0], dCol = directions[d][1];
+                int row = fromRow + dRow, col = fromCol + dCol;
+                while (row >= 0 && row < 8 && col >= 0 && col < 8) {
+                    int t = row * 8 + col;
+                    if (board[t] == EMPTY) {
                         moves.add(Move(sq, t));
+                    } else {
+                        if (isOpponentPiece(board[t], color))
+                            moves.add(Move(sq, t));
+                        break;
+                    }
+                    row += dRow;
+                    col += dCol;
                 }
             }
         }
@@ -447,12 +450,6 @@ void generateEnPassantMoves(MoveList& moves, Color color) {
                     int capFile = file + dir;
                     if (capFile < 0 || capFile > 7) continue;
                     int capSq = targetRank * 8 + capFile;
-                    // Debug print
-                    printf("[ENP DEBUG] sq=%d capSq=%d enPassantTargetSquare=%d\n", sq, capSq, enPassantTargetSquare);
-                    if (capSq == enPassantTargetSquare) {
-                        printf("[ENP DEBUG] Adding en passant move: %d -> %d\n", sq, enPassantTargetSquare);
-                        moves.add(Move(sq, enPassantTargetSquare, EN_PASSANT));
-                    }
                 }
             }
         }
@@ -466,12 +463,6 @@ void generateEnPassantMoves(MoveList& moves, Color color) {
                     int capFile = file + dir;
                     if (capFile < 0 || capFile > 7) continue;
                     int capSq = targetRank * 8 + capFile;
-                    // Debug print
-                    printf("[ENP DEBUG] sq=%d capSq=%d enPassantTargetSquare=%d\n", sq, capSq, enPassantTargetSquare);
-                    if (capSq == enPassantTargetSquare) {
-                        printf("[ENP DEBUG] Adding en passant move: %d -> %d\n", sq, enPassantTargetSquare);
-                        moves.add(Move(sq, enPassantTargetSquare, EN_PASSANT));
-                    }
                 }
             }
         }

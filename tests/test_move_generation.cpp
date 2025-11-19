@@ -134,6 +134,72 @@ void test_en_passant() {
 }
 
 int main() {
+    // Test: sliding piece single-square moves
+    auto test_sliding_piece_moves = []() {
+        for (int i = 0; i < 64; ++i) board[i] = EMPTY;
+        // Place white bishop on d4, rook on d5, queen on d6
+        board[27] = WHITE_BISHOP; // d4
+        board[35] = WHITE_ROOK;   // d5
+        board[43] = WHITE_QUEEN;  // d6
+        board[7] = WHITE_KING;    // h1 (to avoid illegal position)
+        isWhiteTurn = true;
+        MoveList moves = generateLegalmoves();
+
+        // Debug: Print all bishop, rook, and queen moves
+        std::cout << "All bishop moves from d4:" << std::endl;
+        for (int i = 0; i < moves.count; ++i) {
+            if (moves.moves[i].startSquare == 27) {
+                std::cout << "  d4 -> " << squareToString(moves.moves[i].targetSquare) << std::endl;
+            }
+        }
+        std::cout << "All rook moves from d5:" << std::endl;
+        for (int i = 0; i < moves.count; ++i) {
+            if (moves.moves[i].startSquare == 35) {
+                std::cout << "  d5 -> " << squareToString(moves.moves[i].targetSquare) << std::endl;
+            }
+        }
+        std::cout << "All queen moves from d6:" << std::endl;
+        for (int i = 0; i < moves.count; ++i) {
+            if (moves.moves[i].startSquare == 43) {
+                std::cout << "  d6 -> " << squareToString(moves.moves[i].targetSquare) << std::endl;
+            }
+        }
+
+        // Bishop should be able to move to c3, e3, c5, e5
+        bool bishopOk = false;
+        for (int i = 0; i < moves.count; ++i) {
+            if (moves.moves[i].startSquare == 27 &&
+                (moves.moves[i].targetSquare == 18 || moves.moves[i].targetSquare == 20 ||
+                 moves.moves[i].targetSquare == 34 || moves.moves[i].targetSquare == 36)) {
+                bishopOk = true; break;
+            }
+        }
+        // Rook should be able to move to d4, d6, c5, e5
+        bool rookOk = false;
+        for (int i = 0; i < moves.count; ++i) {
+            if (moves.moves[i].startSquare == 35 &&
+                (moves.moves[i].targetSquare == 27 || moves.moves[i].targetSquare == 43 ||
+                 moves.moves[i].targetSquare == 34 || moves.moves[i].targetSquare == 36)) {
+                rookOk = true; break;
+            }
+        }
+        // Queen should be able to move to d5, d7, c6, e6, c7, e7
+        bool queenOk = false;
+        for (int i = 0; i < moves.count; ++i) {
+            if (moves.moves[i].startSquare == 43 &&
+                (moves.moves[i].targetSquare == 35 || moves.moves[i].targetSquare == 51 ||
+                 moves.moves[i].targetSquare == 42 || moves.moves[i].targetSquare == 44 ||
+                 moves.moves[i].targetSquare == 34 || moves.moves[i].targetSquare == 52)) {
+                queenOk = true; break;
+            }
+        }
+        assert(bishopOk && "Bishop single-square and diagonal moves failed");
+        assert(rookOk && "Rook single-square and axis moves failed");
+        assert(queenOk && "Queen single-square and axis/diagonal moves failed");
+        std::cout << "Sliding piece single-square/axis moves: PASS\n";
+    };
+
+    test_sliding_piece_moves();
     test_starting_position();
     test_simple_checkmate();
     test_stalemate();
