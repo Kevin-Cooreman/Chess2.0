@@ -1,4 +1,5 @@
 #pragma once
+// source for move tables: https://github.com/nkarve/surge/blob/master/src/tables.cpp
 /*generate legal moves for each piece
 - possible moves
 - check if blocked
@@ -44,6 +45,10 @@ extern const uint64_t KingMoves[64];
 extern const uint64_t WPawnMoves[64];
 extern const uint64_t BPawnMoves[64];
 
+//pawn attacks
+extern const uint64_t WPawnAttacks[64];
+extern const uint64_t BPawnAttacks[64];
+
 //helpers for gamestate tracking
 extern bool whiteKingMoved;
 extern bool blackKingMoved;
@@ -51,9 +56,12 @@ extern bool whiteKingsideRookMoved;
 extern bool whiteQueensideRookMoved;
 extern bool blackKingsideRookMoved;
 extern bool blackQueensideRookMoved;
+extern bool isWhiteTurn;
 
 // En passant target square (-1 means no en passant available)
 extern int enPassantTargetSquare;
+
+enum Color { WHITE, BLACK };
 
 // move types
 enum MoveType {
@@ -70,12 +78,40 @@ struct Move {
     int targetSquare;  // 0-63
     MoveType moveType;
     int promotionPiece;
+    Move() : startSquare(0), targetSquare(0), moveType(NORMAL), promotionPiece(0) {}
     Move(int s, int t, MoveType type = NORMAL, int promo = 0)
         : startSquare(s), targetSquare(t), moveType(type), promotionPiece(promo) {}
 };
 
+constexpr int MAX_MOVES = 256;
+
+struct MoveList {
+    Move moves[MAX_MOVES];
+    int count;
+
+    MoveList() : count(0) {}
+
+    void add(const Move& move) {
+        if (count < MAX_MOVES) moves[count++] = move;
+    }
+};
+
 //functions
-bool inCheck();
-bool squareAttacked();
-vector<Move> getCastlingMoves(); // should return a fixed sized array??
-vector<Move> getLegalmoves(); //return all legalmoves
+bool inCheck(Color color);
+bool squareAttacked(int square, Color byColor);
+bool isLegalMove(const Move& move, Color color);
+
+//generate special moves
+void generatePseudoLegalMoves(MoveList& moves, Color color);
+void generateCastlingMoves(MoveList& moves, Color color);
+void generatePawnPromotionMoves(MoveList& moves, Color color);
+void generateEnPassantMoves(MoveList& moves, Color color);
+
+inline bool isOpponentPiece(int piece, Color color) {
+    return (color == WHITE && isBlack(piece)) || (color == BLACK && isWhite(piece));
+}
+
+MoveList generateLegalmoves(); //return all legalmoves
+
+void makeMove(const Move& move);
+void undoMove();

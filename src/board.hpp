@@ -44,4 +44,8 @@ void pieceToChar();
 //helper functions
 inline bool isEmpty(int square){return square == 0;}
 inline bool isBlack(int square){return square & 0b1000;} //direct bit check
-inline bool iswhite(int square){return !(isBlack(square) || isEmpty(square));}
+inline bool isWhite(int square){return !(isBlack(square) || isEmpty(square));}
+inline bool sameColour(int square1, int square2){
+    return  (isWhite(square1) && isWhite(square2)) ||
+            (isBlack(square1) && isBlack(square2));
+}

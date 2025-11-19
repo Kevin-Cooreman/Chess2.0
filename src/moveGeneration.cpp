@@ -119,6 +119,43 @@ const uint64_t WPawnMoves[64]= {
 	0x28000000000000, 0x50000000000000, 0xa0000000000000, 0x40000000000000
 };
 
+// Precomputed pawn attack tables
+const uint64_t WPawnAttacks[64] = {
+    0x0000000000000200ULL, 0x0000000000000500ULL, 0x0000000000000A00ULL, 0x0000000000001400ULL,
+    0x0000000000002800ULL, 0x0000000000005000ULL, 0x000000000000A000ULL, 0x0000000000004000ULL,
+    0x0000000000020000ULL, 0x0000000000050000ULL, 0x00000000000A0000ULL, 0x0000000000140000ULL,
+    0x0000000000280000ULL, 0x0000000000500000ULL, 0x0000000000A00000ULL, 0x0000000000400000ULL,
+    0x0000000002000000ULL, 0x0000000005000000ULL, 0x000000000A000000ULL, 0x0000000014000000ULL,
+    0x0000000028000000ULL, 0x0000000050000000ULL, 0x00000000A0000000ULL, 0x0000000040000000ULL,
+    0x0000000200000000ULL, 0x0000000500000000ULL, 0x0000000A00000000ULL, 0x0000001400000000ULL,
+    0x0000002800000000ULL, 0x0000005000000000ULL, 0x000000A000000000ULL, 0x0000004000000000ULL,
+    0x0000020000000000ULL, 0x0000050000000000ULL, 0x00000A0000000000ULL, 0x0000140000000000ULL,
+    0x0000280000000000ULL, 0x0000500000000000ULL, 0x0000A00000000000ULL, 0x0000400000000000ULL,
+    0x0002000000000000ULL, 0x0005000000000000ULL, 0x000A000000000000ULL, 0x0014000000000000ULL,
+    0x0028000000000000ULL, 0x0050000000000000ULL, 0x00A0000000000000ULL, 0x0040000000000000ULL,
+    0x0200000000000000ULL, 0x0500000000000000ULL, 0x0A00000000000000ULL, 0x1400000000000000ULL,
+    0x2800000000000000ULL, 0x5000000000000000ULL, 0xA000000000000000ULL, 0x4000000000000000ULL,
+    0x0000000000000000ULL, 0x0000000000000000ULL, 0x0000000000000000ULL, 0x0000000000000000ULL,
+    0x0000000000000000ULL, 0x0000000000000000ULL, 0x0000000000000000ULL, 0x0000000000000000ULL
+};
+
+const uint64_t BPawnAttacks[64] = {
+    0x0000000000000000ULL, 0x0000000000000000ULL, 0x0000000000000000ULL, 0x0000000000000000ULL,
+    0x0000000000000000ULL, 0x0000000000000000ULL, 0x0000000000000000ULL, 0x0000000000000000ULL,
+    0x0000000000000002ULL, 0x0000000000000005ULL, 0x000000000000000AULL, 0x0000000000000014ULL,
+    0x0000000000000028ULL, 0x0000000000000050ULL, 0x00000000000000A0ULL, 0x0000000000000040ULL,
+    0x0000000000000200ULL, 0x0000000000000500ULL, 0x0000000000000A00ULL, 0x0000000000001400ULL,
+    0x0000000000002800ULL, 0x0000000000005000ULL, 0x000000000000A000ULL, 0x0000000000004000ULL,
+    0x0000000000020000ULL, 0x0000000000050000ULL, 0x00000000000A0000ULL, 0x0000000000140000ULL,
+    0x0000000000280000ULL, 0x0000000000500000ULL, 0x0000000000A00000ULL, 0x0000000000400000ULL,
+    0x0000000002000000ULL, 0x0000000005000000ULL, 0x000000000A000000ULL, 0x0000000014000000ULL,
+    0x0000000028000000ULL, 0x0000000050000000ULL, 0x00000000A0000000ULL, 0x0000000040000000ULL,
+    0x0000000200000000ULL, 0x0000000500000000ULL, 0x0000000A00000000ULL, 0x0000001400000000ULL,
+    0x0000002800000000ULL, 0x0000005000000000ULL, 0x000000A000000000ULL, 0x0000004000000000ULL,
+    0x0000020000000000ULL, 0x0000050000000000ULL, 0x00000A0000000000ULL, 0x0000140000000000ULL,
+    0x0000280000000000ULL, 0x0000500000000000ULL, 0x0000A00000000000ULL, 0x0000400000000000ULL
+};
+
 const uint64_t BPawnMoves[64]= {
     0x200, 0x500, 0xa00, 0x1400,
 	0x2800, 0x5000, 0xa000, 0x4000,
@@ -145,6 +182,319 @@ bool whiteKingsideRookMoved;
 bool whiteQueensideRookMoved;
 bool blackKingsideRookMoved;
 bool blackQueensideRookMoved;
+bool isWhiteTurn;
 
 // En passant target square (-1 means no en passant available)
 int enPassantTargetSquare;
+
+bool squareAttacked(int square, Color byColor) {
+    // Knights
+    for (int sq = 0; sq < 64; ++sq) {
+        int piece = board[sq];
+        if ((byColor == WHITE && isWhite(piece) && piece == WHITE_KNIGHT) ||
+            (byColor == BLACK && isBlack(piece) && piece == BLACK_KNIGHT)) {
+            if (KnightMoves[sq] & (1ULL << square)) return true;
+        }
+    }
+    // Pawns
+    if (byColor == WHITE) {
+        for (int sq = 0; sq < 64; ++sq) {
+            int piece = board[sq];
+            if (isWhite(piece) && piece == WHITE_PAWN && WPawnAttacks[sq] & (1ULL << square)) return true;
+        }
+    } else {
+        for (int sq = 0; sq < 64; ++sq) {
+            int piece = board[sq];
+            if (isBlack(piece) && piece == BLACK_PAWN && BPawnAttacks[sq] & (1ULL << square)) return true;
+        }
+    }
+    // Kings
+    for (int sq = 0; sq < 64; ++sq) {
+        int piece = board[sq];
+        if ((byColor == WHITE && isWhite(piece) && piece == WHITE_KING) ||
+            (byColor == BLACK && isBlack(piece) && piece == BLACK_KING)) {
+            if (KingMoves[sq] & (1ULL << square)) return true;
+        }
+    }
+    // Bishops and Queens (diagonals)
+    for (int sq = 0; sq < 64; ++sq) {
+        int piece = board[sq];
+        if ((byColor == WHITE && isWhite(piece) && (piece == WHITE_BISHOP || piece == WHITE_QUEEN)) ||
+            (byColor == BLACK && isBlack(piece) && (piece == BLACK_BISHOP || piece == BLACK_QUEEN))) {
+            if (BishopMoves[sq] & (1ULL << square)) {
+                // Inline path check
+                int fromRow = sq / 8, fromCol = sq % 8;
+                int toRow = square / 8, toCol = square % 8;
+                int dRow = (toRow > fromRow) ? 1 : -1;
+                int dCol = (toCol > fromCol) ? 1 : -1;
+                int row = fromRow + dRow, col = fromCol + dCol;
+                bool blocked = false;
+                while (row != toRow && col != toCol) {
+                    if (board[row * 8 + col] != EMPTY) { blocked = true; break; }
+                    row += dRow; col += dCol;
+                }
+                if (!blocked) return true;
+            }
+        }
+    }
+    // Rooks and Queens (straight lines)
+    for (int sq = 0; sq < 64; ++sq) {
+        int piece = board[sq];
+        if ((byColor == WHITE && isWhite(piece) && (piece == WHITE_ROOK || piece == WHITE_QUEEN)) ||
+            (byColor == BLACK && isBlack(piece) && (piece == BLACK_ROOK || piece == BLACK_QUEEN))) {
+            if (RookMoves[sq] & (1ULL << square)) {
+                // Inline path check
+                int fromRow = sq / 8, fromCol = sq % 8;
+                int toRow = square / 8, toCol = square % 8;
+                int dRow = (toRow > fromRow) ? 1 : (toRow < fromRow) ? -1 : 0;
+                int dCol = (toCol > fromCol) ? 1 : (toCol < fromCol) ? -1 : 0;
+                int row = fromRow + dRow, col = fromCol + dCol;
+                bool blocked = false;
+                while (row != toRow || col != toCol) {
+                    if (board[row * 8 + col] != EMPTY) { blocked = true; break; }
+                    row += dRow; col += dCol;
+                }
+                if (!blocked) return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool inCheck(int color) {
+    int kingSquare = -1;
+    // Find the king's square
+    for (int sq = 0; sq < 64; ++sq) {
+        if (board[sq] == (color == WHITE ? WHITE_KING : BLACK_KING)) {
+            kingSquare = sq;
+            break;
+        }
+    }
+    // If not found, return false or handle as error
+    if (kingSquare == -1) return false;
+    // Check if the king's square is attacked by the opponent
+    return squareAttacked(kingSquare, color == WHITE ? BLACK : WHITE);
+}
+
+void generatePseudoLegalMoves(MoveList& moves, Color color) {
+    for (int sq = 0; sq < 64; ++sq) {
+        int piece = board[sq];
+        if (piece == EMPTY) continue;
+        if ((color == WHITE && !isWhite(piece)) || (color == BLACK && !isBlack(piece)))
+            continue;
+
+        // Knights
+        if (piece == WHITE_KNIGHT || piece == BLACK_KNIGHT) {
+            uint64_t targets = KnightMoves[sq];
+            for (int t = 0; t < 64; ++t) {
+                if (targets & (1ULL << t)) {
+                    if (board[t] == EMPTY || isOpponentPiece(board[t], color))
+                        moves.add(Move(sq, t));
+                }
+            }
+        }
+        // Bishops
+        else if (piece == WHITE_BISHOP || piece == BLACK_BISHOP) {
+            uint64_t targets = BishopMoves[sq];
+            for (int t = 0; t < 64; ++t) {
+                if (targets & (1ULL << t)) {
+                    // Path blocking check
+                    int fromRow = sq / 8, fromCol = sq % 8;
+                    int toRow = t / 8, toCol = t % 8;
+                    int dRow = (toRow > fromRow) ? 1 : -1;
+                    int dCol = (toCol > fromCol) ? 1 : -1;
+                    int row = fromRow + dRow, col = fromCol + dCol;
+                    bool blocked = false;
+                    while (row != toRow && col != toCol) {
+                        if (board[row * 8 + col] != EMPTY) { blocked = true; break; }
+                        row += dRow; col += dCol;
+                    }
+                    if (!blocked && (board[t] == EMPTY || isOpponentPiece(board[t], color)))
+                        moves.add(Move(sq, t));
+                }
+            }
+        }
+        // Rooks
+        else if (piece == WHITE_ROOK || piece == BLACK_ROOK) {
+            uint64_t targets = RookMoves[sq];
+            for (int t = 0; t < 64; ++t) {
+                if (targets & (1ULL << t)) {
+                    int fromRow = sq / 8, fromCol = sq % 8;
+                    int toRow = t / 8, toCol = t % 8;
+                    int dRow = (toRow > fromRow) ? 1 : (toRow < fromRow) ? -1 : 0;
+                    int dCol = (toCol > fromCol) ? 1 : (toCol < fromCol) ? -1 : 0;
+                    int row = fromRow + dRow, col = fromCol + dCol;
+                    bool blocked = false;
+                    while (row != toRow || col != toCol) {
+                        if (board[row * 8 + col] != EMPTY) { blocked = true; break; }
+                        row += dRow; col += dCol;
+                    }
+                    if (!blocked && (board[t] == EMPTY || isOpponentPiece(board[t], color)))
+                        moves.add(Move(sq, t));
+                }
+            }
+        }
+        // Queens
+        else if (piece == WHITE_QUEEN || piece == BLACK_QUEEN) {
+            uint64_t targets = QueenMoves[sq];
+            for (int t = 0; t < 64; ++t) {
+                if (targets & (1ULL << t)) {
+                    // Queen can move like both rook and bishop, so check both blockings
+                    int fromRow = sq / 8, fromCol = sq % 8;
+                    int toRow = t / 8, toCol = t % 8;
+                    int dRow = (toRow > fromRow) ? 1 : (toRow < fromRow) ? -1 : 0;
+                    int dCol = (toCol > fromCol) ? 1 : (toCol < fromCol) ? -1 : 0;
+                    if (dRow == 0 && dCol == 0) continue;
+                    int row = fromRow + dRow, col = fromCol + dCol;
+                    bool blocked = false;
+                    while (row != toRow || col != toCol) {
+                        if (board[row * 8 + col] != EMPTY) { blocked = true; break; }
+                        row += dRow; col += dCol;
+                    }
+                    if (!blocked && (board[t] == EMPTY || isOpponentPiece(board[t], color)))
+                        moves.add(Move(sq, t));
+                }
+            }
+        }
+        // King
+        else if (piece == WHITE_KING || piece == BLACK_KING) {
+            uint64_t targets = KingMoves[sq];
+            for (int t = 0; t < 64; ++t) {
+                if (targets & (1ULL << t)) {
+                    if (board[t] == EMPTY || isOpponentPiece(board[t], color))
+                        moves.add(Move(sq, t));
+                }
+            }
+        }
+        // Pawns
+        else if (piece == WHITE_PAWN || piece == BLACK_PAWN) {
+            int dir = (color == WHITE) ? 8 : -8;
+            int startRank = (color == WHITE) ? 1 : 6;
+            int sqRank = sq / 8;
+            int forward = sq + dir;
+            // Single push
+            if (forward >= 0 && forward < 64 && board[forward] == EMPTY) {
+                moves.add(Move(sq, forward));
+                // Double push
+                if (sqRank == startRank) {
+                    int doubleForward = sq + 2 * dir;
+                    if (board[doubleForward] == EMPTY)
+                        moves.add(Move(sq, doubleForward));
+                }
+            }
+            // Captures
+            for (int d : {-1, 1}) {
+                int file = sq % 8;
+                int cap = sq + dir + d;
+                if (cap >= 0 && cap < 64 && ((d == -1 && file > 0) || (d == 1 && file < 7))) {
+                    if (isOpponentPiece(board[cap], color))
+                        moves.add(Move(sq, cap));
+                }
+            }
+        }
+    }
+}
+
+void generatePawnPromotionMoves(MoveList& moves, Color color) {
+    int startRank = (color == WHITE) ? 6 : 1;
+    int pawn = (color == WHITE) ? WHITE_PAWN : BLACK_PAWN;
+    const int promoPieces[4] = {
+        color == WHITE ? WHITE_QUEEN : BLACK_QUEEN,
+        color == WHITE ? WHITE_ROOK  : BLACK_ROOK,
+        color == WHITE ? WHITE_BISHOP: BLACK_BISHOP,
+        color == WHITE ? WHITE_KNIGHT: BLACK_KNIGHT
+    };
+
+    for (int sq = startRank * 8; sq < (startRank + 1) * 8; ++sq) {
+        if (board[sq] == pawn) {
+            // Forward move
+            int target = sq + ((color == WHITE) ? 8 : -8);
+            if (board[target] == EMPTY) {
+                for (int i = 0; i < 4; ++i) {
+                    moves.add(Move(sq, target, PAWN_PROMOTION, promoPieces[i]));
+                }
+            }
+            // Captures
+            for (int dir : {-1, 1}) {
+                int file = sq % 8;
+                if ((file == 0 && dir == -1) || (file == 7 && dir == 1)) continue;
+                int capTarget = target + dir;
+                if (isOpponentPiece(board[capTarget], color)) {
+                    for (int i = 0; i < 4; ++i) {
+                        moves.add(Move(sq, capTarget, PAWN_PROMOTION, promoPieces[i]));
+                    }
+                }
+            }
+        }
+    }
+}
+
+void generateEnPassantMoves(MoveList& moves, Color color) {
+    if (enPassantTargetSquare == -1) return;
+    int pawn = (color == WHITE) ? WHITE_PAWN : BLACK_PAWN;
+    int rank = (color == WHITE) ? 4 : 3;
+    for (int file = 0; file < 8; ++file) {
+        int sq = rank * 8 + file;
+        if (board[sq] == pawn) {
+            for (int dir : {-1, 1}) {
+                int capFile = file + dir;
+                if (capFile < 0 || capFile > 7) continue;
+                int capSq = rank * 8 + capFile;
+                if (capSq == enPassantTargetSquare) {
+                    moves.add(Move(sq, enPassantTargetSquare, EN_PASSANT));
+                }
+            }
+        }
+    }
+}
+
+void generateCastlingMoves(MoveList& moves, Color color) {
+    //white
+    if (color == WHITE && !whiteKingMoved) {
+        // Kingside
+        if (!whiteKingsideRookMoved &&
+            board[5] == EMPTY && board[6] == EMPTY &&
+            !squareAttacked(4, BLACK) && !squareAttacked(5, BLACK) && !squareAttacked(6, BLACK)) {
+            moves.add(Move(4, 6, CASTLING_KINGSIDE));
+        }
+        // Queenside
+        if (!whiteQueensideRookMoved &&
+            board[1] == EMPTY && board[2] == EMPTY && board[3] == EMPTY &&
+            !squareAttacked(2, BLACK) && !squareAttacked(3, BLACK) && !squareAttacked(4, BLACK)) {
+            moves.add(Move(4, 2, CASTLING_QUEENSIDE));
+        }
+    }
+	//black
+    else if (color == BLACK && !blackKingMoved) {
+        // Kingside
+        if (!blackKingsideRookMoved &&
+            board[5] == EMPTY && board[6] == EMPTY &&
+            !squareAttacked(4, WHITE) && !squareAttacked(5, WHITE) && !squareAttacked(6, WHITE)) {
+            moves.add(Move(4, 6, CASTLING_KINGSIDE));
+        }
+        // Queenside
+        if (!blackQueensideRookMoved &&
+            board[1] == EMPTY && board[2] == EMPTY && board[3] == EMPTY &&
+            !squareAttacked(2, WHITE) && !squareAttacked(3, WHITE) && !squareAttacked(4, WHITE)) {
+            moves.add(Move(4, 2, CASTLING_QUEENSIDE));
+        }
+    }
+}
+
+MoveList generateLegalmoves() {
+    MoveList pseudoMoves, legalMoves;
+    Color color = isWhiteTurn ? WHITE : BLACK;
+    generatePseudoLegalMoves(pseudoMoves, color);
+    generatePawnPromotionMoves(pseudoMoves, color);
+    generateEnPassantMoves(pseudoMoves, color);
+    generateCastlingMoves(pseudoMoves, color);
+
+    for (int i = 0; i < pseudoMoves.count; ++i) {
+        makeMove(pseudoMoves.moves[i]);
+        if (!inCheck(color)) {
+            legalMoves.add(pseudoMoves.moves[i]);
+        }
+        undoMove();
+    }
+    return legalMoves;
+}
