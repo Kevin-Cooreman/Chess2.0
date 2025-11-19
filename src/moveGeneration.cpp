@@ -221,15 +221,17 @@ bool squareAttacked(int square, Color byColor) {
         int piece = board[sq];
         if ((byColor == WHITE && isWhite(piece) && (piece == WHITE_BISHOP || piece == WHITE_QUEEN)) ||
             (byColor == BLACK && isBlack(piece) && (piece == BLACK_BISHOP || piece == BLACK_QUEEN))) {
-            if (BishopMoves[sq] & (1ULL << square)) {
-                // Inline path check
-                int fromRow = sq / 8, fromCol = sq % 8;
-                int toRow = square / 8, toCol = square % 8;
-                int dRow = (toRow > fromRow) ? 1 : -1;
-                int dCol = (toCol > fromCol) ? 1 : -1;
+            int fromRow = sq / 8, fromCol = sq % 8;
+            int toRow = square / 8, toCol = square % 8;
+            int dRow = toRow - fromRow;
+            int dCol = toCol - fromCol;
+            // Must be on a diagonal
+            if (abs(dRow) == abs(dCol) && dRow != 0) {
+                dRow = (dRow > 0) ? 1 : -1;
+                dCol = (dCol > 0) ? 1 : -1;
                 int row = fromRow + dRow, col = fromCol + dCol;
                 bool blocked = false;
-                while (row != toRow && col != toCol) {
+                while (row != toRow || col != toCol) {
                     if (board[row * 8 + col] != EMPTY) { blocked = true; break; }
                     row += dRow; col += dCol;
                 }
@@ -242,12 +244,14 @@ bool squareAttacked(int square, Color byColor) {
         int piece = board[sq];
         if ((byColor == WHITE && isWhite(piece) && (piece == WHITE_ROOK || piece == WHITE_QUEEN)) ||
             (byColor == BLACK && isBlack(piece) && (piece == BLACK_ROOK || piece == BLACK_QUEEN))) {
-            if (RookMoves[sq] & (1ULL << square)) {
-                // Inline path check
-                int fromRow = sq / 8, fromCol = sq % 8;
-                int toRow = square / 8, toCol = square % 8;
-                int dRow = (toRow > fromRow) ? 1 : (toRow < fromRow) ? -1 : 0;
-                int dCol = (toCol > fromCol) ? 1 : (toCol < fromCol) ? -1 : 0;
+            int fromRow = sq / 8, fromCol = sq % 8;
+            int toRow = square / 8, toCol = square % 8;
+            int dRow = toRow - fromRow;
+            int dCol = toCol - fromCol;
+            // Must be on a straight line
+            if (((dRow == 0 && dCol != 0) || (dCol == 0 && dRow != 0))) {
+                dRow = (dRow == 0) ? 0 : (dRow > 0 ? 1 : -1);
+                dCol = (dCol == 0) ? 0 : (dCol > 0 ? 1 : -1);
                 int row = fromRow + dRow, col = fromCol + dCol;
                 bool blocked = false;
                 while (row != toRow || col != toCol) {
@@ -433,16 +437,41 @@ void generatePawnPromotionMoves(MoveList& moves, Color color) {
 void generateEnPassantMoves(MoveList& moves, Color color) {
     if (enPassantTargetSquare == -1) return;
     int pawn = (color == WHITE) ? WHITE_PAWN : BLACK_PAWN;
-    int rank = (color == WHITE) ? 4 : 3;
-    for (int file = 0; file < 8; ++file) {
-        int sq = rank * 8 + file;
-        if (board[sq] == pawn) {
-            for (int dir : {-1, 1}) {
-                int capFile = file + dir;
-                if (capFile < 0 || capFile > 7) continue;
-                int capSq = rank * 8 + capFile;
-                if (capSq == enPassantTargetSquare) {
-                    moves.add(Move(sq, enPassantTargetSquare, EN_PASSANT));
+    if (color == WHITE) {
+        int rank = 4; // e5, squares 32-39
+        for (int file = 0; file < 8; ++file) {
+            int sq = rank * 8 + file;
+            if (board[sq] == pawn) {
+                int targetRank = 5;
+                for (int dir : {-1, 1}) {
+                    int capFile = file + dir;
+                    if (capFile < 0 || capFile > 7) continue;
+                    int capSq = targetRank * 8 + capFile;
+                    // Debug print
+                    printf("[ENP DEBUG] sq=%d capSq=%d enPassantTargetSquare=%d\n", sq, capSq, enPassantTargetSquare);
+                    if (capSq == enPassantTargetSquare) {
+                        printf("[ENP DEBUG] Adding en passant move: %d -> %d\n", sq, enPassantTargetSquare);
+                        moves.add(Move(sq, enPassantTargetSquare, EN_PASSANT));
+                    }
+                }
+            }
+        }
+    } else {
+        int rank = 3; // e4, squares 24-31
+        for (int file = 0; file < 8; ++file) {
+            int sq = rank * 8 + file;
+            if (board[sq] == pawn) {
+                int targetRank = 2;
+                for (int dir : {-1, 1}) {
+                    int capFile = file + dir;
+                    if (capFile < 0 || capFile > 7) continue;
+                    int capSq = targetRank * 8 + capFile;
+                    // Debug print
+                    printf("[ENP DEBUG] sq=%d capSq=%d enPassantTargetSquare=%d\n", sq, capSq, enPassantTargetSquare);
+                    if (capSq == enPassantTargetSquare) {
+                        printf("[ENP DEBUG] Adding en passant move: %d -> %d\n", sq, enPassantTargetSquare);
+                        moves.add(Move(sq, enPassantTargetSquare, EN_PASSANT));
+                    }
                 }
             }
         }
@@ -450,34 +479,34 @@ void generateEnPassantMoves(MoveList& moves, Color color) {
 }
 
 void generateCastlingMoves(MoveList& moves, Color color) {
-    //white
-    if (color == WHITE && !whiteKingMoved) {
+    // White castling: only if king is on e1 and rooks on h1/a1
+    if (color == WHITE && !whiteKingMoved && board[4] == WHITE_KING) {
         // Kingside
-        if (!whiteKingsideRookMoved &&
+        if (!whiteKingsideRookMoved && board[7] == WHITE_ROOK &&
             board[5] == EMPTY && board[6] == EMPTY &&
             !squareAttacked(4, BLACK) && !squareAttacked(5, BLACK) && !squareAttacked(6, BLACK)) {
             moves.add(Move(4, 6, CASTLING_KINGSIDE));
         }
         // Queenside
-        if (!whiteQueensideRookMoved &&
+        if (!whiteQueensideRookMoved && board[0] == WHITE_ROOK &&
             board[1] == EMPTY && board[2] == EMPTY && board[3] == EMPTY &&
             !squareAttacked(2, BLACK) && !squareAttacked(3, BLACK) && !squareAttacked(4, BLACK)) {
             moves.add(Move(4, 2, CASTLING_QUEENSIDE));
         }
     }
-	//black
-    else if (color == BLACK && !blackKingMoved) {
+    // Black castling: only if king is on e8 and rooks on h8/a8
+    else if (color == BLACK && !blackKingMoved && board[60] == BLACK_KING) {
         // Kingside
-        if (!blackKingsideRookMoved &&
-            board[5] == EMPTY && board[6] == EMPTY &&
-            !squareAttacked(4, WHITE) && !squareAttacked(5, WHITE) && !squareAttacked(6, WHITE)) {
-            moves.add(Move(4, 6, CASTLING_KINGSIDE));
+        if (!blackKingsideRookMoved && board[63] == BLACK_ROOK &&
+            board[61] == EMPTY && board[62] == EMPTY &&
+            !squareAttacked(60, WHITE) && !squareAttacked(61, WHITE) && !squareAttacked(62, WHITE)) {
+            moves.add(Move(60, 62, CASTLING_KINGSIDE));
         }
         // Queenside
-        if (!blackQueensideRookMoved &&
-            board[1] == EMPTY && board[2] == EMPTY && board[3] == EMPTY &&
-            !squareAttacked(2, WHITE) && !squareAttacked(3, WHITE) && !squareAttacked(4, WHITE)) {
-            moves.add(Move(4, 2, CASTLING_QUEENSIDE));
+        if (!blackQueensideRookMoved && board[56] == BLACK_ROOK &&
+            board[57] == EMPTY && board[58] == EMPTY && board[59] == EMPTY &&
+            !squareAttacked(58, WHITE) && !squareAttacked(59, WHITE) && !squareAttacked(60, WHITE)) {
+            moves.add(Move(60, 58, CASTLING_QUEENSIDE));
         }
     }
 }
@@ -719,7 +748,7 @@ void updateGameState(const Move& move) {
             enPassantTargetSquare = move.startSquare + 8;
         }
         if (movingPiece == BLACK_PAWN && move.startSquare - move.targetSquare == 16) {
-            enPassantTargetSquare = move.startSquare - 8;
+            enPassantTargetSquare = move.targetSquare + 8;
         }
 
     // Switch turn
