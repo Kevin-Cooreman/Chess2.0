@@ -187,7 +187,7 @@ bool isWhiteTurn;
 // En passant target square (-1 means no en passant available)
 int enPassantTargetSquare;
 
-bool squareAttacked(int square, Color byColor) {
+bool squareAttacked(const int board[64], int square, Color byColor) {
     // Knights
     for (int sq = 0; sq < 64; ++sq) {
         int piece = board[sq];
@@ -265,22 +265,21 @@ bool squareAttacked(int square, Color byColor) {
     return false;
 }
 
-bool inCheck(Color color) {
+bool inCheck(const int board[64], bool isWhiteTurn, bool whiteKingMoved, bool blackKingMoved, bool whiteKingsideRookMoved, bool whiteQueensideRookMoved, bool blackKingsideRookMoved, bool blackQueensideRookMoved, int enPassantTargetSquare) {
     int kingSquare = -1;
-    // Find the king's square
+    int kingPiece = isWhiteTurn ? WHITE_KING : BLACK_KING;
     for (int sq = 0; sq < 64; ++sq) {
-        if (board[sq] == (color == WHITE ? WHITE_KING : BLACK_KING)) {
+        if (board[sq] == kingPiece) {
             kingSquare = sq;
             break;
         }
     }
-    // If not found, return false or handle as error
     if (kingSquare == -1) return false;
-    // Check if the king's square is attacked by the opponent
-    return squareAttacked(kingSquare, color == WHITE ? BLACK : WHITE);
+    Color color = isWhiteTurn ? WHITE : BLACK;
+    return squareAttacked(board, kingSquare, color == WHITE ? BLACK : WHITE);
 }
 
-void generatePseudoLegalMoves(MoveList& moves, Color color) {
+void generatePseudoLegalMoves(const int board[64], MoveList& moves, Color color) {
     for (int sq = 0; sq < 64; ++sq) {
         int piece = board[sq];
         if (piece == EMPTY) continue;
@@ -475,13 +474,13 @@ void generateCastlingMoves(MoveList& moves, Color color) {
         // Kingside
         if (!whiteKingsideRookMoved && board[7] == WHITE_ROOK &&
             board[5] == EMPTY && board[6] == EMPTY &&
-            !squareAttacked(4, BLACK) && !squareAttacked(5, BLACK) && !squareAttacked(6, BLACK)) {
+            !squareAttacked(board, 4, BLACK) && !squareAttacked(board, 5, BLACK) && !squareAttacked(board, 6, BLACK)) {
             moves.add(Move(4, 6, CASTLING_KINGSIDE));
         }
         // Queenside
         if (!whiteQueensideRookMoved && board[0] == WHITE_ROOK &&
             board[1] == EMPTY && board[2] == EMPTY && board[3] == EMPTY &&
-            !squareAttacked(2, BLACK) && !squareAttacked(3, BLACK) && !squareAttacked(4, BLACK)) {
+            !squareAttacked(board, 2, BLACK) && !squareAttacked(board, 3, BLACK) && !squareAttacked(board, 4, BLACK)) {
             moves.add(Move(4, 2, CASTLING_QUEENSIDE));
         }
     }
@@ -490,13 +489,13 @@ void generateCastlingMoves(MoveList& moves, Color color) {
         // Kingside
         if (!blackKingsideRookMoved && board[63] == BLACK_ROOK &&
             board[61] == EMPTY && board[62] == EMPTY &&
-            !squareAttacked(60, WHITE) && !squareAttacked(61, WHITE) && !squareAttacked(62, WHITE)) {
+            !squareAttacked(board, 60, WHITE) && !squareAttacked(board, 61, WHITE) && !squareAttacked(board, 62, WHITE)) {
             moves.add(Move(60, 62, CASTLING_KINGSIDE));
         }
         // Queenside
         if (!blackQueensideRookMoved && board[56] == BLACK_ROOK &&
             board[57] == EMPTY && board[58] == EMPTY && board[59] == EMPTY &&
-            !squareAttacked(58, WHITE) && !squareAttacked(59, WHITE) && !squareAttacked(60, WHITE)) {
+            !squareAttacked(board, 58, WHITE) && !squareAttacked(board, 59, WHITE) && !squareAttacked(board, 60, WHITE)) {
             moves.add(Move(60, 58, CASTLING_QUEENSIDE));
         }
     }
@@ -618,7 +617,7 @@ MoveList generateLegalmoves() {
     uint64_t kingTargets = KingMoves[kingSq];
     for (int t = 0; t < 64; ++t) {
         if (kingTargets & (1ULL << t)) {
-            if ((board[t] == EMPTY || isOpponentPiece(board[t], color)) && !squareAttacked(t, color == WHITE ? BLACK : WHITE)) {
+            if ((board[t] == EMPTY || isOpponentPiece(board[t], color)) && !squareAttacked(board, t, color == WHITE ? BLACK : WHITE)) {
                 legalMoves.add(Move(kingSq, t));
             }
         }
@@ -631,10 +630,10 @@ MoveList generateLegalmoves() {
 
     // 3. Generate pseudo-legal moves for all pieces (except king)
     MoveList pseudoMoves;
-    generatePseudoLegalMoves(pseudoMoves, color);
-    generatePawnPromotionMoves(pseudoMoves, color);
-    generateEnPassantMoves(pseudoMoves, color);
-    generateCastlingMoves(pseudoMoves, color);
+    generatePseudoLegalMoves(board, pseudoMoves, color);
+    generatePawnPromotionMoves(board, pseudoMoves, color);
+    generateEnPassantMoves(board, pseudoMoves, color, enPassantTargetSquare);
+    generateCastlingMoves(board, pseudoMoves, color, whiteKingMoved, blackKingMoved, whiteKingsideRookMoved, whiteQueensideRookMoved, blackKingsideRookMoved, blackQueensideRookMoved);
 
     for (int i = 0; i < pseudoMoves.count; ++i) {
         const Move& move = pseudoMoves.moves[i];
@@ -670,107 +669,4 @@ MoveList generateLegalmoves() {
         legalMoves.add(move);
     }
     return legalMoves;
-}
-
-// Make a move on the board and update game state
-void makeMove(const Move& move) {
-    saveGameState();
-    int movingPiece = board[move.startSquare];
-    int capturedPiece = board[move.targetSquare];
-
-    // Handle special moves
-    switch (move.moveType) {
-        case CASTLING_KINGSIDE:
-            board[move.targetSquare] = movingPiece;
-            board[move.startSquare] = EMPTY;
-            if (isWhite(movingPiece)) {
-                board[move.targetSquare - 1] = WHITE_ROOK;
-                board[move.targetSquare + 1] = EMPTY;
-            } else {
-                board[move.targetSquare - 1] = BLACK_ROOK;
-                board[move.targetSquare + 1] = EMPTY;
-            }
-            break;
-        case CASTLING_QUEENSIDE:
-            board[move.targetSquare] = movingPiece;
-            board[move.startSquare] = EMPTY;
-            if (isWhite(movingPiece)) {
-                board[move.targetSquare + 1] = WHITE_ROOK;
-                board[move.targetSquare - 2] = EMPTY;
-            } else {
-                board[move.targetSquare + 1] = BLACK_ROOK;
-                board[move.targetSquare - 2] = EMPTY;
-            }
-            break;
-        case EN_PASSANT: {
-            board[move.targetSquare] = movingPiece;
-            board[move.startSquare] = EMPTY;
-            int capSq = move.targetSquare + (isWhite(movingPiece) ? -8 : 8);
-            board[capSq] = EMPTY;
-            break;
-        }
-        case PAWN_PROMOTION:
-            board[move.targetSquare] = move.promotionPiece;
-            board[move.startSquare] = EMPTY;
-            break;
-        default:
-            board[move.targetSquare] = movingPiece;
-            board[move.startSquare] = EMPTY;
-            break;
-    }
-    updateGameState(move);
-}
-
-void updateGameState(const Move& move) {
-    // Reset en passant target
-        enPassantTargetSquare = -1;
-
-        // Track king and rook movement for castling rights
-        int movingPiece = board[move.targetSquare];
-        if (movingPiece == WHITE_KING) whiteKingMoved = true;
-        if (movingPiece == BLACK_KING) blackKingMoved = true;
-        if (move.startSquare == 0) whiteQueensideRookMoved = true;
-        if (move.startSquare == 7) whiteKingsideRookMoved = true;
-        if (move.startSquare == 56) blackQueensideRookMoved = true;
-        if (move.startSquare == 63) blackKingsideRookMoved = true;
-
-        // Pawn double move (sets en passant target)
-        if (movingPiece == WHITE_PAWN && move.targetSquare - move.startSquare == 16) {
-            enPassantTargetSquare = move.startSquare + 8;
-        }
-        if (movingPiece == BLACK_PAWN && move.startSquare - move.targetSquare == 16) {
-            enPassantTargetSquare = move.targetSquare + 8;
-        }
-
-    // Switch turn
-    isWhiteTurn = !isWhiteTurn;
-}
-
-void saveGameState() {
-    GameState state;
-    for (int i = 0; i < 64; ++i) state.board[i] = board[i];
-    state.whiteKingMoved = whiteKingMoved;
-    state.blackKingMoved = blackKingMoved;
-    state.whiteKingsideRookMoved = whiteKingsideRookMoved;
-    state.whiteQueensideRookMoved = whiteQueensideRookMoved;
-    state.blackKingsideRookMoved = blackKingsideRookMoved;
-    state.blackQueensideRookMoved = blackQueensideRookMoved;
-    state.isWhiteTurn = isWhiteTurn;
-    state.enPassantTargetSquare = enPassantTargetSquare;
-    undoStack.push(state);
-}
-
-void undoMove() {
-    if (undoStack.empty()) return;
-    GameState state = undoStack.top();
-    undoStack.pop();
-    for (int i = 0; i < 64; ++i) board[i] = state.board[i];
-    whiteKingMoved = state.whiteKingMoved;
-    blackKingMoved = state.blackKingMoved;
-    whiteKingsideRookMoved = state.whiteKingsideRookMoved;
-    whiteQueensideRookMoved = state.whiteQueensideRookMoved;
-    blackKingsideRookMoved = state.blackKingsideRookMoved;
-    blackQueensideRookMoved = state.blackQueensideRookMoved;
-    isWhiteTurn = state.isWhiteTurn;
-    enPassantTargetSquare = state.enPassantTargetSquare;
 }

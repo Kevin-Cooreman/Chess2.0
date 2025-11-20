@@ -1,31 +1,28 @@
-#include "board.hpp"
-#include "moveGeneration.hpp"
+#include <cctype>
+#include <sstream>
+
+// Local helper functions for UCI move parsing/printing
+int algebraicToSquare(const std::string& alg) {
+    if (alg.length() != 2) return -1;
+    int file = alg[0] - 'a';
+    int rank = alg[1] - '1';
+    return rank * 8 + file;
+}
+std::string squareToAlgebraic(int sq) {
+    char file = 'a' + (sq % 8);
+    char rank = '1' + (sq / 8);
+    return std::string{file, rank};
+}
+#include "game.hpp"
 #include <iostream>
 #include <string>
 #include <cctype>
 #include <sstream>
 using namespace std;
 
-// Helper: convert algebraic (e2) to 0-63 square
-int algebraicToSquare(const string& s) {
-    if (s.length() != 2) return -1;
-    char file = tolower(s[0]);
-    char rank = s[1];
-    if (file < 'a' || file > 'h' || rank < '1' || rank > '8') return -1;
-    int col = file - 'a';
-    int row = rank - '1';
-    return row * 8 + col;
-}
-
-// Helper: convert 0-63 square to algebraic
-string squareToAlgebraic(int sq) {
-    char file = 'a' + (sq % 8);
-    char rank = '1' + (sq / 8);
-    return string() + file + rank;
-}
 
 int main() {
-    // Minimal UCI protocol loop
+    Game game;
     string line;
     while (getline(cin, line)) {
         if (line == "uci") {
@@ -35,15 +32,13 @@ int main() {
         } else if (line == "isready") {
             cout << "readyok" << endl;
         } else if (line == "ucinewgame") {
-            setupStartPos();
+            game.reset();
         } else if (line.rfind("position", 0) == 0) {
             // Support 'position startpos moves ...'
             if (line.find("startpos") != string::npos) {
-                setupStartPos();
+                game.reset();
                 size_t movesIdx = line.find("moves");
                 if (movesIdx != string::npos) {
-                    // Parse and play each move in order
-                    isWhiteTurn = true; // ensure correct turn
                     string movesStr = line.substr(movesIdx + 5); // after 'moves'
                     istringstream ms(movesStr);
                     string move;
@@ -53,7 +48,7 @@ int main() {
                         int promo = 0;
                         if (move.length() == 5) {
                             char p = tolower(move[4]);
-                            if (isWhiteTurn) {
+                            if (game.whiteToMove()) {
                                 if (p == 'q') promo = WHITE_QUEEN;
                                 else if (p == 'r') promo = WHITE_ROOK;
                                 else if (p == 'b') promo = WHITE_BISHOP;
@@ -65,7 +60,8 @@ int main() {
                                 else if (p == 'n') promo = BLACK_KNIGHT;
                             }
                         }
-                        MoveList legalMoves = generateLegalmoves();
+                        // Generate legal moves for the current position
+                        MoveList legalMoves = game.generateLegalMoves();
                         bool found = false;
                         Move chosen;
                         for (int i = 0; i < legalMoves.count; ++i) {
@@ -80,7 +76,7 @@ int main() {
                         }
                         if (found) {
                             cout << "info string UCI replay: applying move " << move << endl;
-                            makeMove(chosen);
+                            game.makeMove(chosen);
                         } else {
                             cout << "info string UCI replay: WARNING - move not found in legal move list: " << move << endl;
                         }
@@ -88,18 +84,16 @@ int main() {
                 }
             }
         } else if (line.rfind("go", 0) == 0) {
-            // Generate and play a random legal move
-            MoveList legalMoves = generateLegalmoves();
+            // Generate and play a move
+            MoveList legalMoves = game.generateLegalMoves();
             if (legalMoves.count > 0) {
-                // Pick the first move (for now, not random)
                 const Move& m = legalMoves.moves[0];
                 string moveStr = squareToAlgebraic(m.startSquare) + squareToAlgebraic(m.targetSquare);
                 if (m.moveType == PAWN_PROMOTION) {
-                    // Always promote to queen for now
                     moveStr += 'q';
                 }
                 cout << "bestmove " << moveStr << endl;
-                makeMove(m);
+                game.makeMove(m);
             } else {
                 cout << "bestmove 0000" << endl;
             }
