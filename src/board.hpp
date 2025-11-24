@@ -3,7 +3,6 @@
 // using a 8x8 board representation 
 
 #pragma once
-#include "game.hpp"
 #include <iostream>
 #include <cstdint>
 #include <array>
@@ -39,6 +38,8 @@ const uint8_t BLACK_KING = 0b1110; //14
 void initBoard(); //initialise empty board
 void printBoard(); //prints board
 void setupStartPos(); //setup starting position
+void charToPiece(); //converts a charachter to a piece type
+void pieceToChar();
 
 //helper functions
 inline bool isEmpty(int square){return square == 0;}

@@ -123,20 +123,23 @@ struct GameState {
 static std::stack<GameState> undoStack;
 
 //functions
-bool inCheck(const int board[64], bool isWhiteTurn, bool whiteKingMoved, bool blackKingMoved, bool whiteKingsideRookMoved, bool whiteQueensideRookMoved, bool blackKingsideRookMoved, bool blackQueensideRookMoved, int enPassantTargetSquare);
-bool squareAttacked(const int board[64], int square, Color byColor);
-bool isLegalMove(const int board[64], const Move& move, Color color);
+bool inCheck(Color color);
+bool squareAttacked(int square, Color byColor);
+bool isLegalMove(const Move& move, Color color);
 
 //generate special moves
-void generatePseudoLegalMoves(const int board[64], MoveList& moves, Color color);
-void generateCastlingMoves(const int board[64], MoveList& moves, Color color, bool whiteKingMoved, bool blackKingMoved, bool whiteKingsideRookMoved, bool whiteQueensideRookMoved, bool blackKingsideRookMoved, bool blackQueensideRookMoved);
-void generatePawnPromotionMoves(const int board[64], MoveList& moves, Color color);
-void generateEnPassantMoves(const int board[64], MoveList& moves, Color color, int enPassantTargetSquare);
+void generatePseudoLegalMoves(MoveList& moves, Color color);
+void generateCastlingMoves(MoveList& moves, Color color);
+void generatePawnPromotionMoves(MoveList& moves, Color color);
+void generateEnPassantMoves(MoveList& moves, Color color);
 
 inline bool isOpponentPiece(int piece, Color color) {
     return (color == WHITE && isBlack(piece)) || (color == BLACK && isWhite(piece));
 }
 
-MoveList generateLegalmoves(const int board[64], bool isWhiteTurn, bool whiteKingMoved, bool blackKingMoved, bool whiteKingsideRookMoved, bool whiteQueensideRookMoved, bool blackKingsideRookMoved, bool blackQueensideRookMoved, int enPassantTargetSquare);
+MoveList generateLegalmoves(); //return all legalmoves
 
-// Remove updateGameState, makeMove, saveGameState, undoMove from here (move to Game class)
+void updateGameState(const Move& move);
+void makeMove(const Move& move);
+void saveGameState();
+void undoMove();

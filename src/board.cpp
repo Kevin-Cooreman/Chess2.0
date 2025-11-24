@@ -10,6 +10,49 @@ void initBoard(){
     }
 }
 
+//converts a piece to it's character representation
+char pieceToChar(int piece){
+    switch(piece){
+        //WHITE
+        case 0b0001: return 'P';
+        case 0b0010: return 'N';
+        case 0b0011: return 'B';
+        case 0b0100: return 'R';
+        case 0b0101: return 'Q';
+        case 0b0110: return 'K';
+        //BLACK
+        case 0b1001: return 'p';
+        case 0b1010: return 'n';
+        case 0b1011: return 'b';
+        case 0b1100: return 'r';
+        case 0b1101: return 'q';
+        case 0b1110: return 'k';
+        //DEFAULT
+        default: return ' ';
+    }
+}
+
+int charToPiece(char piece){
+        switch(piece){
+        //WHITE
+        case 'P': return WHITE_PAWN;
+        case 'R': return WHITE_ROOK;
+        case 'N': return WHITE_KNIGHT;
+        case 'B': return WHITE_BISHOP;
+        case 'Q': return WHITE_QUEEN;
+        case 'K': return WHITE_KING;
+        //BLACK
+        case 'p': return BLACK_PAWN;
+        case 'r': return BLACK_ROOK;
+        case 'n': return BLACK_KNIGHT;
+        case 'b': return BLACK_BISHOP;
+        case 'q': return BLACK_QUEEN;
+        case 'k': return BLACK_KING;
+        //DEFAULT
+        default: return EMPTY;
+    }
+}
+
 //prints the board
 void printBoard(){
     cout << "\n  +---+---+---+---+---+---+---+---+\n";
