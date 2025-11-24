@@ -37,9 +37,8 @@ const uint8_t BLACK_KING = 0b1110; //14
 //functions
 void initBoard(); //initialise empty board
 void printBoard(); //prints board
-void setupStartPos(); //setup starting position
-void charToPiece(); //converts a charachter to a piece type
-void pieceToChar();
+int charToPiece(char piece); //converts a charachter to a piece type
+char pieceToChar(int piece);
 
 //helper functions
 inline bool isEmpty(int square){return square == 0;}

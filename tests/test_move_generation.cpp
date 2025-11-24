@@ -1,6 +1,7 @@
 #include <string>
 #include "../src/moveGeneration.hpp"
 #include "../src/board.hpp"
+#include "../src/game.hpp"
 #include <cassert>
 #include <iostream>
 
@@ -26,71 +27,72 @@ void printMoves(const MoveList& moves) {
 }
 
 void test_starting_position() {
-    setupStartPos();
-    MoveList moves = generateLegalmoves();
+    Game game;
+    game.setupStartPos();
+    MoveList moves = generateLegalMoves(game.getState());
     assert(moves.count == 20);
     std::cout << "Starting position: PASS\n";
 }
 
 void test_simple_checkmate() {
-    // Black king on h8, white queen on g7, white king on f6, black to move (checkmate)
-    for (int i = 0; i < 64; ++i) board[i] = EMPTY;
-    // Reset all game state flags
-    whiteKingMoved = false;
-    blackKingMoved = false;
-    whiteKingsideRookMoved = false;
-    whiteQueensideRookMoved = false;
-    blackKingsideRookMoved = false;
-    blackQueensideRookMoved = false;
-    enPassantTargetSquare = -1;
-    isWhiteTurn = false;
-    // Set up position
-    board[63] = BLACK_KING; // h8
-    board[54] = WHITE_QUEEN; // g7
-    board[45] = WHITE_KING; // f6;
-    MoveList moves = generateLegalmoves();
+    Game game;
+    GameState state = game.getState();
+    for (int i = 0; i < 64; ++i) state.board[i] = EMPTY;
+    state.whiteKingMoved = false;
+    state.blackKingMoved = false;
+    state.whiteKingsideRookMoved = false;
+    state.whiteQueensideRookMoved = false;
+    state.blackKingsideRookMoved = false;
+    state.blackQueensideRookMoved = false;
+    state.enPassantTargetSquare = -1;
+    state.isWhiteTurn = false;
+    state.board[63] = BLACK_KING; // h8
+    state.board[54] = WHITE_QUEEN; // g7
+    state.board[45] = WHITE_KING; // f6;
+    game.setGameState(state); // Use setGameState instead of updateGameState
+    MoveList moves = generateLegalMoves(game.getState());
     assert(moves.count == 0);
     std::cout << "Simple checkmate: PASS\n";
 }
 
 void test_stalemate() {
-    // Black king on h8, white king on f7, white queen on g6, black to move (stalemate)
-    for (int i = 0; i < 64; ++i) board[i] = EMPTY;
-    // Reset all game state flags
-    whiteKingMoved = false;
-    blackKingMoved = false;
-    whiteKingsideRookMoved = false;
-    whiteQueensideRookMoved = false;
-    blackKingsideRookMoved = false;
-    blackQueensideRookMoved = false;
-    enPassantTargetSquare = -1;
-    isWhiteTurn = false;
-    // Set up position
-    board[63] = BLACK_KING; // h8
-    board[53] = WHITE_QUEEN; // g6
-    board[45] = WHITE_KING; // f7;
-    MoveList moves = generateLegalmoves();
+    Game game;
+    GameState state = game.getState();
+    for (int i = 0; i < 64; ++i) state.board[i] = EMPTY;
+    state.whiteKingMoved = false;
+    state.blackKingMoved = false;
+    state.whiteKingsideRookMoved = false;
+    state.whiteQueensideRookMoved = false;
+    state.blackKingsideRookMoved = false;
+    state.blackQueensideRookMoved = false;
+    state.enPassantTargetSquare = -1;
+    state.isWhiteTurn = false;
+    state.board[63] = BLACK_KING; // h8
+    state.board[53] = WHITE_QUEEN; // g6
+    state.board[45] = WHITE_KING; // f7;
+    game.setGameState(state); // Use setGameState instead of updateGameState
+    MoveList moves = generateLegalMoves(game.getState());
     assert(moves.count == 0);
     std::cout << "Stalemate: PASS\n";
 }
 
 void test_pawn_promotion() {
-    // White pawn on g7, white king on h1, black king on h8, white to move
-    for (int i = 0; i < 64; ++i) board[i] = EMPTY;
-    // Reset all game state flags
-    whiteKingMoved = false;
-    blackKingMoved = false;
-    whiteKingsideRookMoved = false;
-    whiteQueensideRookMoved = false;
-    blackKingsideRookMoved = false;
-    blackQueensideRookMoved = false;
-    enPassantTargetSquare = -1;
-    isWhiteTurn = true;
-    // Set up position
-    board[54] = WHITE_PAWN; // g7
-    board[7] = WHITE_KING; // h1
-    board[63] = BLACK_KING; // h8;
-    MoveList moves = generateLegalmoves();
+    Game game;
+    GameState state = game.getState();
+    for (int i = 0; i < 64; ++i) state.board[i] = EMPTY;
+    state.whiteKingMoved = false;
+    state.blackKingMoved = false;
+    state.whiteKingsideRookMoved = false;
+    state.whiteQueensideRookMoved = false;
+    state.blackKingsideRookMoved = false;
+    state.blackQueensideRookMoved = false;
+    state.enPassantTargetSquare = -1;
+    state.isWhiteTurn = true;
+    state.board[54] = WHITE_PAWN; // g7
+    state.board[7] = WHITE_KING; // h1
+    state.board[63] = BLACK_KING; // h8;
+    game.setGameState(state); // Use setGameState instead of updateGameState
+    MoveList moves = generateLegalMoves(game.getState());
     bool foundPromotion = false;
     for (int i = 0; i < moves.count; ++i) {
         if (moves.moves[i].moveType == PAWN_PROMOTION) foundPromotion = true;
@@ -99,30 +101,36 @@ void test_pawn_promotion() {
     std::cout << "Pawn promotion: PASS\n";
 }
 
+// Refactor test_en_passant to use Game class methods
+
 void test_en_passant() {
-    // White pawn on e5, black pawn on d7, white king on h1, black king on h8, black to move
-    for (int i = 0; i < 64; ++i) board[i] = EMPTY;
-    // Reset all game state flags
-    whiteKingMoved = false;
-    blackKingMoved = false;
-    whiteKingsideRookMoved = false;
-    whiteQueensideRookMoved = false;
-    blackKingsideRookMoved = false;
-    blackQueensideRookMoved = false;
-    enPassantTargetSquare = -1;
-    isWhiteTurn = false;
-    // Set up position
-    board[36] = WHITE_PAWN; // e5
-    board[51] = BLACK_PAWN; // d7
-    board[7] = WHITE_KING; // h1
-    board[63] = BLACK_KING; // h8;
+    Game game;
+    GameState state = game.getState();
+    for (int i = 0; i < 64; ++i) state.board[i] = EMPTY;
+    state.whiteKingMoved = false;
+    state.blackKingMoved = false;
+    state.whiteKingsideRookMoved = false;
+    state.whiteQueensideRookMoved = false;
+    state.blackKingsideRookMoved = false;
+    state.blackQueensideRookMoved = false;
+    state.enPassantTargetSquare = -1;
+    state.isWhiteTurn = false;
+    state.board[36] = WHITE_PAWN; // e5
+    state.board[51] = BLACK_PAWN; // d7
+    state.board[7] = WHITE_KING; // h1
+    state.board[63] = BLACK_KING; // h8;
+    game.setGameState(state);
+
     // Black pawn moves d7-d5
     Move m(51, 35, NORMAL);
-    makeMove(m);
-    printBoard();
+    game.makeMove(m); // Use Game class method
+
     // Now white can capture en passant
-    isWhiteTurn = true;
-    MoveList moves = generateLegalmoves();
+    state = game.getState();
+    state.isWhiteTurn = true;
+    game.setGameState(state);
+
+    MoveList moves = generateLegalMoves(game.getState());
     bool foundEnPassant = false;
     for (int i = 0; i < moves.count; ++i) {
         if (moves.moves[i].moveType == EN_PASSANT) foundEnPassant = true;
@@ -130,38 +138,41 @@ void test_en_passant() {
     printMoves(moves);
     assert(foundEnPassant);
     std::cout << "En passant: PASS\n";
-    undoMove();
+
+    game.undoMove(); // Use Game class method
 }
 
 int main() {
     // Test: sliding piece single-square moves
     auto test_sliding_piece_moves = []() {
-        for (int i = 0; i < 64; ++i) board[i] = EMPTY;
+        Game game;
+        GameState state = game.getState();
+        for (int i = 0; i < 64; ++i) state.board[i] = EMPTY;
         // Place white bishop on d4, rook on d5, queen on d6
-        board[27] = WHITE_BISHOP; // d4
-        board[35] = WHITE_ROOK;   // d5
-        board[43] = WHITE_QUEEN;  // d6
-        board[7] = WHITE_KING;    // h1 (to avoid illegal position)
-        isWhiteTurn = true;
-        MoveList moves = generateLegalmoves();
+        state.board[27] = WHITE_BISHOP; // d4
+        state.board[35] = WHITE_ROOK;   // d5
+        state.board[43] = WHITE_QUEEN;  // d6
+        state.board[7] = WHITE_KING;    // h1 (to avoid illegal position)
+        state.isWhiteTurn = true;
+        game.setGameState(state);
 
-        // Debug: Print all bishop, rook, and queen moves
+        MoveList moves = generateLegalMoves(game.getState());
+
+        // Debug: Print board state
+        std::cout << "Board state:" << std::endl;
+        for (int row = 7; row >= 0; --row) {
+            for (int col = 0; col < 8; ++col) {
+                int sq = row * 8 + col;
+                std::cout << state.board[sq] << " ";
+            }
+            std::cout << std::endl;
+        }
+
+        // Debug: Print all moves for bishop at d4
         std::cout << "All bishop moves from d4:" << std::endl;
         for (int i = 0; i < moves.count; ++i) {
             if (moves.moves[i].startSquare == 27) {
                 std::cout << "  d4 -> " << squareToString(moves.moves[i].targetSquare) << std::endl;
-            }
-        }
-        std::cout << "All rook moves from d5:" << std::endl;
-        for (int i = 0; i < moves.count; ++i) {
-            if (moves.moves[i].startSquare == 35) {
-                std::cout << "  d5 -> " << squareToString(moves.moves[i].targetSquare) << std::endl;
-            }
-        }
-        std::cout << "All queen moves from d6:" << std::endl;
-        for (int i = 0; i < moves.count; ++i) {
-            if (moves.moves[i].startSquare == 43) {
-                std::cout << "  d6 -> " << squareToString(moves.moves[i].targetSquare) << std::endl;
             }
         }
 

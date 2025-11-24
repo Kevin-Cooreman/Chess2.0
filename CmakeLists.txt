@@ -11,6 +11,7 @@ add_executable(Chess2.0
 	src/main.cpp
 	src/board.cpp
 	src/moveGeneration.cpp
+	src/game.cpp
 )
 
 # Move generation test executable
@@ -18,6 +19,7 @@ add_executable(test_move_generation
 	tests/test_move_generation.cpp
 	src/board.cpp
 	src/moveGeneration.cpp
+	src/game.cpp
 )
 
 # Print build info

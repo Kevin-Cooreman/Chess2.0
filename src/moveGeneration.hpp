@@ -7,6 +7,8 @@
 - complex moves like castle and en passant*/
 
 #include "board.hpp"
+// Forward declaration to break circular dependency
+struct GameState;
 #include <cstdint>
 #include <iostream>
 #include <vector>
@@ -15,23 +17,6 @@
 #include <stack>
 
 using namespace std;
-
-
-
-/*To Do:    Normal moves:
-            Rook Moves
-            Bishop Moves
-            Queen Moves
-            Knight Moves
-            King Moves
-            Pawn Moves
-
-            Legal moves:
-            if in Check
-            if pinned => if after move in check?
-            castling
-            en passant
-*/
 
 //precomputed tables for all psuedo-legal moves 
 //sliding pieces
@@ -50,15 +35,6 @@ extern const uint64_t BPawnMoves[64];
 //pawn attacks
 extern const uint64_t WPawnAttacks[64];
 extern const uint64_t BPawnAttacks[64];
-
-//helpers for gamestate tracking
-extern bool whiteKingMoved;
-extern bool blackKingMoved;
-extern bool whiteKingsideRookMoved;
-extern bool whiteQueensideRookMoved;
-extern bool blackKingsideRookMoved;
-extern bool blackQueensideRookMoved;
-extern bool isWhiteTurn;
 
 // En passant target square (-1 means no en passant available)
 extern int enPassantTargetSquare;
@@ -106,30 +82,13 @@ struct PinCheckInfo {
 };
 
 PinCheckInfo detectPinsAndChecks(Color color);
-
-// Structure to store all necessary game state for undo
-struct GameState {
-    int board[64];
-    bool whiteKingMoved;
-    bool blackKingMoved;
-    bool whiteKingsideRookMoved;
-    bool whiteQueensideRookMoved;
-    bool blackKingsideRookMoved;
-    bool blackQueensideRookMoved;
-    bool isWhiteTurn;
-    int enPassantTargetSquare;
-};
-
-static std::stack<GameState> undoStack;
-
 //functions
 bool inCheck(Color color);
 bool squareAttacked(int square, Color byColor);
-bool isLegalMove(const Move& move, Color color);
 
 //generate special moves
 void generatePseudoLegalMoves(MoveList& moves, Color color);
-void generateCastlingMoves(MoveList& moves, Color color);
+void generateCastlingMoves(MoveList& moves, GameState state, Color color);
 void generatePawnPromotionMoves(MoveList& moves, Color color);
 void generateEnPassantMoves(MoveList& moves, Color color);
 
@@ -137,9 +96,5 @@ inline bool isOpponentPiece(int piece, Color color) {
     return (color == WHITE && isBlack(piece)) || (color == BLACK && isWhite(piece));
 }
 
-MoveList generateLegalmoves(); //return all legalmoves
-
-void updateGameState(const Move& move);
-void makeMove(const Move& move);
-void saveGameState();
-void undoMove();
+// Add correct legal move generator declaration
+MoveList generateLegalMoves(const GameState& state); //return all legalmoves

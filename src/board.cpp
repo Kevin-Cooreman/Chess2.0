@@ -70,25 +70,3 @@ void printBoard(){
     // Print file letters
     cout << "    a   b   c   d   e   f   g   h\n\n";
 }
-
-//sets up starting position
-void setupStartPos(){
-    initBoard(); // Clear the board first
-    isWhiteTurn = true; // White to move at start
-
-    int row = 7, col = 0;
-
-    for(char c : startingPosition) {
-        if(c == '/') {
-            row--;      // Move to next rank (downwards)
-            col = 0;    // Reset to file 'a'
-        }
-        else if(isdigit(c)) {
-            col += (c - '0');  // Skip empty squares (number tells us how many)
-        }
-        else {
-            board[row*8+col] = charToPiece(c);  // Place the piece
-            col++;
-        }
-    }
-}
